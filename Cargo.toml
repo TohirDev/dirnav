@@ -1,5 +1,9 @@
 [package]
-name = "dir"
+license = "MIT"
+description = "Navigate easily between your folders"
+repository = "https://github.com/tohirdev/dirnav"
+readme = "README.md"
+name = "dirnav"
 version = "0.1.0"
 edition = "2024"
 
