@@ -1,4 +1,4 @@
-use std::{env, ffi::OsString, fs};
+use std::{env, ffi::OsString, fmt::format, fs, path::PathBuf};
 
 use color_eyre::eyre::{Ok, Result};
 use ratatui::{
@@ -11,30 +11,22 @@ use ratatui::{
 
 #[derive(Debug, Default)]
 struct AppState {
-    dirs: Vec<OsString>,
+    dirs: Vec<String>,
     lists: ListState,
 }
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let terminal = ratatui::init();
-    let result = run(terminal);
+    let mut terminal = ratatui::init();
+    let result = run(&mut terminal);
     ratatui::restore();
     result
 }
 
-fn run(mut terminal: DefaultTerminal) -> Result<()> {
+fn run(terminal: &mut DefaultTerminal) -> Result<()> {
     let path = env::current_dir()?;
     let mut app_state = AppState::default();
-    for entry in fs::read_dir(&path)? {
-        let entry = entry?;
-        let path = entry.path();
-        let file_name = path.file_name().unwrap();
-        if path.is_dir() {
-            app_state.dirs.push(file_name.to_owned());
-        }
-    }
-
+    generate_dir(&path, &mut app_state);
     loop {
         terminal.draw(|f| render(f, &mut app_state))?;
         if let Event::Key(k) = event::read()? {
@@ -49,6 +41,19 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                     'k' => {
                         app_state.lists.select_previous();
                     }
+                    'b' => {
+                        env::set_current_dir("../")?;
+                        let path = env::current_dir()?;
+                        generate_dir(&path, &mut app_state);
+                        run(terminal);
+                    }
+                    'c' => {
+                        env::set_current_dir("../")?;
+                        let path = env::current_dir()?;
+                        generate_dir(&path, &mut app_state);
+                        run(terminal);
+                    }
+
                     _ => {}
                 },
                 _ => {}
@@ -69,13 +74,28 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
         .border_type(BorderType::Rounded)
         .fg(Color::Yellow)
         .render(border_area, frame.buffer_mut());
-    let lists = List::new(
-        state
-            .dirs
-            .iter()
-            .map(|x| ListItem::from(x.to_string_lossy().to_string())),
-    )
-    .highlight_symbol(">")
-    .highlight_style(Style::default().fg(Color::Green));
+    let lists = List::new(state.dirs.iter().map(|x| ListItem::from(x.to_string())))
+        .highlight_symbol(">")
+        .highlight_style(Style::default().fg(Color::Green));
     frame.render_stateful_widget(lists, inner_area, &mut state.lists);
+}
+
+fn generate_dir(path: &PathBuf, app_state: &mut AppState) -> Result<()> {
+    let dir_icon = "\u{1F4C1}";
+    let file_icon = "\u{1F4C4}";
+    for entry in fs::read_dir(&path)? {
+        let entry = entry?;
+        let path = entry.path();
+        let file_name = path.file_name().unwrap();
+        if path.is_dir() {
+            app_state
+                .dirs
+                .push(format!("{} {:?}", dir_icon, file_name.to_owned()));
+        } else if path.is_file() {
+            app_state
+                .dirs
+                .push(format!("{} {:?}", file_icon, file_name.to_owned()));
+        }
+    }
+    Ok(())
 }
