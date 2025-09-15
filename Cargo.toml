@@ -1,6 +1,6 @@
 [package]
 license = "MIT"
-description = "Navigate easily between your folders"
+description = "Navigate easily between your directories"
 repository = "https://github.com/corepanic64/dirnav"
 readme = "README.md"
 name = "dirnav"
