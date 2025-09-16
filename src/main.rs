@@ -8,10 +8,16 @@ use std::{
     process::Command,
 };
 
-use color_eyre::eyre::{Ok, Result};
+use color_eyre::{
+    eyre::{Ok, Result},
+    owo_colors::OwoColorize,
+};
 use ratatui::{
     DefaultTerminal, Frame,
-    crossterm::event::{self, Event},
+    crossterm::{
+        event::{self, Event},
+        // style::Color,
+    },
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
     widgets::{Block, BorderType, List, ListItem, ListState, Paragraph, Widget},
@@ -42,6 +48,7 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
             match k.code {
                 event::KeyCode::Esc => {
                     let path = env::current_dir()?;
+                    // panic!("{:?}", path);
                     env::set_current_dir(&path);
                     break;
                 }
@@ -58,7 +65,7 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                         generate_dir(&path, &mut app_state);
                         // run(terminal);
                     }
-                    'c' => {
+                    'f' => {
                         if let Some(i) = app_state.lists.selected() {
                             // panic!("{:?}", app_state.dirs)
                             let location = &app_state.dirs[i];
@@ -71,6 +78,12 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                         // env::set_current_dir("../")?; let path = env::current_dir()?;
                         // generate_dir(&path, &mut app_state);
                         // run(terminal);
+                    }
+                    'z' => {
+                        Command::new("zed")
+                            .arg(".")
+                            .spawn()
+                            .expect("zed command failed");
                     }
                     _ => {}
                 },
@@ -92,15 +105,16 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
         .border_type(BorderType::Rounded)
         .fg(Color::Yellow)
         .render(border_area, frame.buffer_mut());
-    let lists = List::new(
-        state
-            .dirs
-            .iter()
-            .map(|x| ListItem::from(x.file_name().unwrap().to_string_lossy().to_string())),
-    )
-    .highlight_symbol(">")
+    let lists = List::new(state.dirs.iter().map(|x| {
+        ListItem::style(
+            ListItem::from(x.file_name().unwrap().to_string_lossy().to_string()),
+            Color::Black,
+        )
+    }))
+    .highlight_symbol("->")
     .highlight_style(Style::default().fg(Color::Green));
     frame.render_stateful_widget(lists, inner_area, &mut state.lists);
+    frame.render_widget(Block::bordered().title("「 ✦ dir_nav 🦀 ✦ 」"), inner_area);
 }
 
 fn generate_dir(path: &PathBuf, app_state: &mut AppState) -> Result<()> {
