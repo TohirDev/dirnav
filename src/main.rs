@@ -1,4 +1,12 @@
-use std::{env, ffi::OsString, fmt::format, fs, path::PathBuf};
+use std::{
+    env,
+    ffi::OsString,
+    fmt::format,
+    fs::{self, File, Metadata},
+    panic,
+    path::PathBuf,
+    process::Command,
+};
 
 use color_eyre::eyre::{Ok, Result};
 use ratatui::{
@@ -11,7 +19,7 @@ use ratatui::{
 
 #[derive(Debug, Default)]
 struct AppState {
-    dirs: Vec<String>,
+    dirs: Vec<PathBuf>,
     lists: ListState,
 }
 
@@ -23,6 +31,7 @@ fn main() -> Result<()> {
     result
 }
 
+#[allow(unused_must_use)]
 fn run(terminal: &mut DefaultTerminal) -> Result<()> {
     let path = env::current_dir()?;
     let mut app_state = AppState::default();
@@ -32,6 +41,8 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
         if let Event::Key(k) = event::read()? {
             match k.code {
                 event::KeyCode::Esc => {
+                    let path = env::current_dir()?;
+                    env::set_current_dir(&path);
                     break;
                 }
                 event::KeyCode::Char(char) => match char {
@@ -45,15 +56,22 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                         env::set_current_dir("../")?;
                         let path = env::current_dir()?;
                         generate_dir(&path, &mut app_state);
-                        run(terminal);
+                        // run(terminal);
                     }
                     'c' => {
-                        env::set_current_dir("../")?;
-                        let path = env::current_dir()?;
-                        generate_dir(&path, &mut app_state);
-                        run(terminal);
+                        if let Some(i) = app_state.lists.selected() {
+                            // panic!("{:?}", app_state.dirs)
+                            let location = &app_state.dirs[i];
+                            // let output = Command::new("xdg-open").arg(location).output();
+                            env::set_current_dir(location);
+                            let path = env::current_dir()?;
+                            generate_dir(&path, &mut app_state);
+                            // panic!("{:?} {:?}", output, location);
+                        }
+                        // env::set_current_dir("../")?; let path = env::current_dir()?;
+                        // generate_dir(&path, &mut app_state);
+                        // run(terminal);
                     }
-
                     _ => {}
                 },
                 _ => {}
@@ -74,27 +92,36 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
         .border_type(BorderType::Rounded)
         .fg(Color::Yellow)
         .render(border_area, frame.buffer_mut());
-    let lists = List::new(state.dirs.iter().map(|x| ListItem::from(x.to_string())))
-        .highlight_symbol(">")
-        .highlight_style(Style::default().fg(Color::Green));
+    let lists = List::new(
+        state
+            .dirs
+            .iter()
+            .map(|x| ListItem::from(x.file_name().unwrap().to_string_lossy().to_string())),
+    )
+    .highlight_symbol(">")
+    .highlight_style(Style::default().fg(Color::Green));
     frame.render_stateful_widget(lists, inner_area, &mut state.lists);
 }
 
 fn generate_dir(path: &PathBuf, app_state: &mut AppState) -> Result<()> {
+    app_state.dirs = vec![];
     let dir_icon = "\u{1F4C1}";
     let file_icon = "\u{1F4C4}";
     for entry in fs::read_dir(&path)? {
         let entry = entry?;
         let path = entry.path();
+        let metadata = path.metadata()?;
         let file_name = path.file_name().unwrap();
         if path.is_dir() {
             app_state
                 .dirs
-                .push(format!("{} {:?}", dir_icon, file_name.to_owned()));
+                // .push(format!("{} {:?}", dir_icon, file_name.to_owned()));
+                .push(path);
         } else if path.is_file() {
             app_state
                 .dirs
-                .push(format!("{} {:?}", file_icon, file_name.to_owned()));
+                // .push(format!("{} {:?}", file_icon, file_name.to_owned()));
+                .push(path);
         }
     }
     Ok(())
