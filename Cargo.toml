@@ -1,10 +1,10 @@
 [package]
 license = "MIT"
-description = "Navigate easily between your directories"
+description = "Fast and simple directory navigation in your terminal."
 repository = "https://github.com/corepanic64/dirnav"
 readme = "README.md"
 name = "dirnav"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [dependencies]
