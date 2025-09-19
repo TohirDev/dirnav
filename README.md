@@ -16,6 +16,7 @@ Contributions, feedback, and bug reports are highly encouraged!
   - `f` → enter directory
   - `b` → go back (up one directory)
   - `z` → open current folder in **Zed editor**
+  - `escape` → exit program
 - Minimal and distraction-free interface
 - Powered by **Rust** for speed and safety
 
