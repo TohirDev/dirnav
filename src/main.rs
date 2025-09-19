@@ -86,12 +86,12 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
         .areas(border_area);
     Block::bordered()
         .border_type(BorderType::Rounded)
-        .fg(Color::White)
+        .fg(Color::DarkGray)
         .render(border_area, frame.buffer_mut());
     let lists = List::new(state.dirs.iter().map(|x| {
         ListItem::style(
             ListItem::from(x.file_name().unwrap().to_string_lossy()),
-            Color::White,
+            Color::DarkGray,
         )
     }))
     .highlight_symbol("->")
