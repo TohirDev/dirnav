@@ -86,18 +86,18 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
         .areas(border_area);
     Block::bordered()
         .border_type(BorderType::Rounded)
-        .fg(Color::Yellow)
+        .fg(Color::White)
         .render(border_area, frame.buffer_mut());
     let lists = List::new(state.dirs.iter().map(|x| {
         ListItem::style(
             ListItem::from(x.file_name().unwrap().to_string_lossy()),
-            Color::Black,
+            Color::White,
         )
     }))
     .highlight_symbol("->")
     .highlight_style(Style::default().fg(Color::Green));
     frame.render_stateful_widget(lists, inner_area, &mut state.lists);
-    frame.render_widget(Block::bordered().title("「 ✦ dir_nav 🦀 ✦ 」"), inner_area);
+    // frame.render_widget(Block::bordered().title("「 ✦ dir_nav 🦀 ✦ 」"), inner_area);
 }
 
 fn generate_dir(path: &PathBuf, app_state: &mut AppState) -> Result<()> {
