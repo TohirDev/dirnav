@@ -1,26 +1,17 @@
 use std::{
     env,
-    ffi::OsString,
-    fmt::format,
-    fs::{self, File, Metadata},
-    panic,
+    fs::{self},
     path::PathBuf,
     process::Command,
 };
 
-use color_eyre::{
-    eyre::{Ok, Result},
-    owo_colors::OwoColorize,
-};
+use color_eyre::eyre::{Ok, Result};
 use ratatui::{
     DefaultTerminal, Frame,
-    crossterm::{
-        event::{self, Event},
-        // style::Color,
-    },
+    crossterm::event::{self, Event},
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
-    widgets::{Block, BorderType, List, ListItem, ListState, Paragraph, Widget},
+    widgets::{Block, BorderType, List, ListItem, ListState, Widget},
 };
 
 #[derive(Debug, Default)]
@@ -48,7 +39,6 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
             match k.code {
                 event::KeyCode::Esc => {
                     let path = env::current_dir()?;
-                    // panic!("{:?}", path);
                     env::set_current_dir(&path);
                     break;
                 }
@@ -63,21 +53,14 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                         env::set_current_dir("../")?;
                         let path = env::current_dir()?;
                         generate_dir(&path, &mut app_state);
-                        // run(terminal);
                     }
                     'f' => {
                         if let Some(i) = app_state.lists.selected() {
-                            // panic!("{:?}", app_state.dirs)
                             let location = &app_state.dirs[i];
-                            // let output = Command::new("xdg-open").arg(location).output();
                             env::set_current_dir(location);
                             let path = env::current_dir()?;
                             generate_dir(&path, &mut app_state);
-                            // panic!("{:?} {:?}", output, location);
                         }
-                        // env::set_current_dir("../")?; let path = env::current_dir()?;
-                        // generate_dir(&path, &mut app_state);
-                        // run(terminal);
                     }
                     'z' => {
                         Command::new("zed")
@@ -107,7 +90,7 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
         .render(border_area, frame.buffer_mut());
     let lists = List::new(state.dirs.iter().map(|x| {
         ListItem::style(
-            ListItem::from(x.file_name().unwrap().to_string_lossy().to_string()),
+            ListItem::from(x.file_name().unwrap().to_string_lossy()),
             Color::Black,
         )
     }))
@@ -119,23 +102,13 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
 
 fn generate_dir(path: &PathBuf, app_state: &mut AppState) -> Result<()> {
     app_state.dirs = vec![];
-    let dir_icon = "\u{1F4C1}";
-    let file_icon = "\u{1F4C4}";
     for entry in fs::read_dir(&path)? {
         let entry = entry?;
         let path = entry.path();
-        let metadata = path.metadata()?;
-        let file_name = path.file_name().unwrap();
         if path.is_dir() {
-            app_state
-                .dirs
-                // .push(format!("{} {:?}", dir_icon, file_name.to_owned()));
-                .push(path);
+            app_state.dirs.push(path);
         } else if path.is_file() {
-            app_state
-                .dirs
-                // .push(format!("{} {:?}", file_icon, file_name.to_owned()));
-                .push(path);
+            app_state.dirs.push(path);
         }
     }
     Ok(())
