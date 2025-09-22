@@ -1,11 +1,15 @@
 use std::{
     env,
     fs::{self},
+    ops::Index,
     path::PathBuf,
     process::Command,
 };
 
-use color_eyre::eyre::{Ok, Result};
+use color_eyre::{
+    eyre::{Ok, Result},
+    owo_colors::OwoColorize,
+};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event},
@@ -32,7 +36,10 @@ fn main() -> Result<()> {
 fn run(terminal: &mut DefaultTerminal) -> Result<()> {
     let path = env::current_dir()?;
     let mut app_state = AppState::default();
-    generate_dir(&path, &mut app_state);
+    let mut is_dotfiles_visible = false;
+    let mut show_files = true;
+    generate_dir(&path, &mut app_state, false, show_files);
+    // panic!("{:?}", &app_state.dirs);
     loop {
         terminal.draw(|f| render(f, &mut app_state))?;
         if let Event::Key(k) = event::read()? {
@@ -52,14 +59,17 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                     'b' => {
                         env::set_current_dir("../")?;
                         let path = env::current_dir()?;
-                        generate_dir(&path, &mut app_state);
+                        clean_dirs(&mut app_state);
+                        generate_dir(&path, &mut app_state, is_dotfiles_visible, show_files);
                     }
                     'f' => {
                         if let Some(i) = app_state.lists.selected() {
                             let location = &app_state.dirs[i];
                             env::set_current_dir(location);
                             let path = env::current_dir()?;
-                            generate_dir(&path, &mut app_state);
+                            clean_dirs(&mut app_state);
+                            show_files = true;
+                            generate_dir(&path, &mut app_state, is_dotfiles_visible, show_files);
                         }
                     }
                     'z' => {
@@ -68,9 +78,50 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                             .spawn()
                             .expect("zed command failed");
                     }
+                    'c' => {
+                        Command::new("code")
+                            .arg(".")
+                            .spawn()
+                            .expect("vs_code command failed");
+                    }
+                    '.' => {
+                        is_dotfiles_visible = !is_dotfiles_visible;
+                        let path = env::current_dir()?;
+                        generate_dir(&path, &mut app_state, is_dotfiles_visible, show_files);
+                    }
+                    'g' => {
+                        show_files = !show_files;
+                        let path = env::current_dir()?;
+                        generate_dir(&path, &mut app_state, is_dotfiles_visible, show_files);
+                    }
                     _ => {}
                 },
                 _ => {}
+            }
+        }
+    }
+    Ok(())
+}
+
+fn generate_dir(
+    path: &PathBuf,
+    app_state: &mut AppState,
+    show_dotfiles: bool,
+    show_files: bool,
+) -> Result<()> {
+    clean_dirs(app_state);
+    for entry in fs::read_dir(&path)? {
+        let entry = entry?;
+        let path = entry.path();
+        let is_dotfile = entry.file_name().to_string_lossy().starts_with(".");
+
+        let should_include = if show_dotfiles { true } else { !is_dotfile };
+
+        if should_include {
+            if show_files {
+                app_state.dirs.push(path)
+            } else if path.is_dir() {
+                app_state.dirs.push(path)
             }
         }
     }
@@ -94,22 +145,12 @@ fn render(frame: &mut Frame, state: &mut AppState) -> () {
             Color::DarkGray,
         )
     }))
-    .highlight_symbol("->")
+    // .highlight_symbol(">")
     .highlight_style(Style::default().fg(Color::Green));
     frame.render_stateful_widget(lists, inner_area, &mut state.lists);
     // frame.render_widget(Block::bordered().title("「 ✦ dir_nav 🦀 ✦ 」"), inner_area);
 }
 
-fn generate_dir(path: &PathBuf, app_state: &mut AppState) -> Result<()> {
+fn clean_dirs(app_state: &mut AppState) {
     app_state.dirs = vec![];
-    for entry in fs::read_dir(&path)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            app_state.dirs.push(path);
-        } else if path.is_file() {
-            app_state.dirs.push(path);
-        }
-    }
-    Ok(())
 }
