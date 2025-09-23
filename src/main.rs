@@ -1,15 +1,11 @@
 use std::{
     env,
     fs::{self},
-    ops::Index,
     path::PathBuf,
     process::Command,
 };
 
-use color_eyre::{
-    eyre::{Ok, Result},
-    owo_colors::OwoColorize,
-};
+use color_eyre::eyre::{Ok, Result};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event},
@@ -39,7 +35,6 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
     let mut is_dotfiles_visible = false;
     let mut show_files = true;
     generate_dir(&path, &mut app_state, false, show_files);
-    // panic!("{:?}", &app_state.dirs);
     loop {
         terminal.draw(|f| render(f, &mut app_state))?;
         if let Event::Key(k) = event::read()? {
@@ -93,6 +88,12 @@ fn run(terminal: &mut DefaultTerminal) -> Result<()> {
                         show_files = !show_files;
                         let path = env::current_dir()?;
                         generate_dir(&path, &mut app_state, is_dotfiles_visible, show_files);
+                    }
+                    'p' => {
+                        if let Some(i) = app_state.lists.selected() {
+                            let location = &app_state.dirs[i];
+                            opener::open(location)?;
+                        }
                     }
                     _ => {}
                 },
