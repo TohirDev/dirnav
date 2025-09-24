@@ -16,6 +16,9 @@ Contributions, feedback, and bug reports are highly encouraged!
   - `f` → enter directory
   - `b` → go back (up one directory)
   - `z` → open current folder in **Zed editor**
+  - `.` → toggle dot files and dirs show
+  - `p` → open images/pdf with native app
+  - `g` → toggle files show
   - `escape` → exit program
 - Minimal and distraction-free interface
 - Powered by **Rust** for speed and safety
