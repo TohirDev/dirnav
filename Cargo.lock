@@ -233,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "dirnav"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "color-eyre",
  "crossterm 0.29.0",
